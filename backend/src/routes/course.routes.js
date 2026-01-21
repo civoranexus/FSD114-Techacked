@@ -1,13 +1,17 @@
 const express = require("express");
+const Course = require("../models/Course");
 const router = express.Router();
 
-// TEMP GET API (just to make it run)
-router.get("/", (req, res) => {
-  res.json([
-    { id: 1, title: "HTML" },
-    { id: 2, title: "CSS" },
-    { id: 3, title: "JavaScript" }
-  ]);
+// GET: Get all courses
+router.get("/", async (req, res) => {
+  const courses = await Course.find();
+  res.json(courses);
+});
+
+// POST: Create a new course
+router.post("/", async (req, res) => {
+  const course = await Course.create(req.body);
+  res.json(course);
 });
 
 module.exports = router;

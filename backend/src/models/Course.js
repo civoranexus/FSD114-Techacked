@@ -1,10 +1,15 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db");
+const mongoose = require("mongoose");
 
-const Course = sequelize.define("Course", {
-  title: DataTypes.STRING,
-  description: DataTypes.TEXT,
-  createdBy: DataTypes.INTEGER
+const CourseSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String
+  }
+}, {
+  timestamps: true
 });
 
-module.exports = Course;
+module.exports = mongoose.model("Course", CourseSchema);

@@ -1,9 +1,8 @@
 const express = require("express");
+const { register, login } = require("../controllers/auth.controller");
 const router = express.Router();
 
-// TEMP route to remove errors
-router.get("/", (req, res) => {
-  res.send("Auth routes working");
-});
+router.post("/register", register);
+router.post("/login", login);
 
 module.exports = router;

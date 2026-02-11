@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import {
   Upload,
@@ -25,6 +26,8 @@ import {
   Trash2,
   Save,
   Eye,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface Lesson {
@@ -42,12 +45,18 @@ interface Section {
 }
 
 const CreateCourse: React.FC = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [level, setLevel] = useState('');
   const [price, setPrice] = useState('');
   const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
   const [sections, setSections] = useState<Section[]>([
     {
       id: '1',
@@ -130,21 +139,123 @@ const CreateCourse: React.FC = () => {
   };
 
   const handleSave = async (isDraft: boolean) => {
+    // Validation
+    if (!title.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a course title',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!description.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a course description',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!category) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a category',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!level) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a difficulty level',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isDraft) {
+      setIsSaving(true);
+    } else {
+      setIsPublishing(true);
+    }
+
     try {
+      // Prepare course data
       const courseData = {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         category,
         level,
         price: parseFloat(price) || 0,
-        sections,
-        isDraft,
+        thumbnail: thumbnailPreview || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
+        sections: sections.map(section => ({
+          title: section.title,
+          lessons: section.lessons.map(lesson => ({
+            title: lesson.title,
+            type: lesson.type,
+            duration: lesson.duration || '10:00',
+            content: lesson.content || '',
+          })),
+        })),
+        status: isDraft ? 'draft' : 'published',
+        instructor: 'Current Teacher', // Will be set by backend
+        studentsEnrolled: 0,
+        rating: 0,
+        lessonsCount: sections.reduce((total, section) => total + section.lessons.length, 0),
+        duration: `${sections.reduce((total, section) => total + section.lessons.length, 0) * 10} hours`,
       };
 
-      await api.courses.create(courseData);
-      toast.success(isDraft ? 'Course saved as draft!' : 'Course published successfully!');
-    } catch (error) {
-      toast.error('Failed to save course. Please try again.');
+      // Call API using centralized api helper
+      const data = await api.courses.create(courseData);
+
+      toast({
+        title: 'Success!',
+        description: isDraft 
+          ? 'Course saved as draft successfully' 
+          : 'Course published successfully!',
+      });
+
+      // Show success message with icon
+      setTimeout(() => {
+        toast({
+          title: isDraft ? '📝 Draft Saved' : '🎉 Course Published!',
+          description: isDraft 
+            ? 'You can continue editing your course anytime' 
+            : 'Your course is now live and available to students',
+        });
+      }, 500);
+
+      // Redirect to teacher dashboard after 2 seconds
+      setTimeout(() => {
+        navigate('/dashboard/teacher');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Error saving course:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save course. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+      setIsPublishing(false);
+    }
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnail(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -175,13 +286,39 @@ const CreateCourse: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleSave(true)}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Draft
+            <Button 
+              variant="outline" 
+              onClick={() => handleSave(true)}
+              disabled={isSaving || isPublishing}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Draft
+                </>
+              )}
             </Button>
-            <Button className="btn-primary-gradient" onClick={() => handleSave(false)}>
-              <Eye className="h-4 w-4 mr-2" />
-              Publish
+            <Button 
+              className="btn-primary-gradient" 
+              onClick={() => handleSave(false)}
+              disabled={isSaving || isPublishing}
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Publish Course
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -219,6 +356,15 @@ const CreateCourse: React.FC = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="mathematics">Mathematics</SelectItem>
+                    <SelectItem value="science">Science</SelectItem>
+                    <SelectItem value="english">English</SelectItem>
+                    <SelectItem value="hindi">Hindi</SelectItem>
+                    <SelectItem value="social-studies">Social Studies</SelectItem>
+                    <SelectItem value="physics">Physics</SelectItem>
+                    <SelectItem value="chemistry">Chemistry</SelectItem>
+                    <SelectItem value="biology">Biology</SelectItem>
+                    <SelectItem value="computer-science">Computer Science</SelectItem>
                     <SelectItem value="web-development">Web Development</SelectItem>
                     <SelectItem value="data-science">Data Science</SelectItem>
                     <SelectItem value="design">Design</SelectItem>
@@ -257,19 +403,42 @@ const CreateCourse: React.FC = () => {
             {/* Thumbnail Upload */}
             <div className="space-y-2">
               <Label>Course Thumbnail</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  Drag and drop an image, or click to browse
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Recommended: 1280x720 pixels (16:9 ratio)
-                </p>
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer relative">
+                {thumbnailPreview ? (
+                  <div className="relative">
+                    <img 
+                      src={thumbnailPreview} 
+                      alt="Thumbnail preview" 
+                      className="max-h-48 mx-auto rounded-lg"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => {
+                        setThumbnail(null);
+                        setThumbnailPreview('');
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag and drop an image, or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Recommended: 1280x720 pixels (16:9 ratio)
+                    </p>
+                  </>
+                )}
                 <input
                   type="file"
                   accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleThumbnailChange}
                 />
               </div>
             </div>

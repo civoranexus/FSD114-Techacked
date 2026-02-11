@@ -21,7 +21,6 @@ import {
   FileText,
   Download,
   Share2,
-  Heart,
   CreditCard,
   ShoppingCart,
 } from 'lucide-react';
@@ -191,11 +190,7 @@ const CourseDetails: React.FC = () => {
                 )}
 
                 <div className="flex gap-2 mb-6">
-                  <Button variant="outline" className="flex-1">
-                    <Heart className="h-4 w-4 mr-2" />
-                    Wishlist
-                  </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button variant="outline" className="w-full">
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>

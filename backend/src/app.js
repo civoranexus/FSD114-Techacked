@@ -6,7 +6,7 @@ const app = express();
 app.use("/api/notify", require("./routes/notification.routes"));
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/courses", require("./routes/course.routes"));
 app.use("/api/enrollments", require("./routes/enrollment.routes"));

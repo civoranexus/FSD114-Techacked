@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import Progress from "./pages/Progress";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -28,6 +29,10 @@ import StudentDashboard from "./pages/Dashboard/StudentDashboard";
 import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
 import AdminDashboard from "./pages/Dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
+import Payment from "./pages/Payment";
+import TeacherStudents from "./pages/TeacherStudents";
+import StudentProfileView from "./pages/StudentProfileView";
 
 
 
@@ -35,12 +40,13 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <ThemeProvider>
+      <AuthProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <Routes>
               <Route path="/progress" element={<Progress />} />
               <Route path="/" element={<Home />} />
@@ -65,12 +71,17 @@ const App = () => (
               <Route path="/dashboard/student" element={<StudentDashboard />} />
               <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
               <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/payment" element={<Payment />} />
+              <Route path="/teacher/students" element={<TeacherStudents />} />
+              <Route path="/student/:id" element={<StudentProfileView />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>
     </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

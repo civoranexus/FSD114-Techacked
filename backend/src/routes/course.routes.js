@@ -47,10 +47,35 @@ router.post("/", auth, async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const course = await Course.create(req.body);
-    res.status(201).json(course);
+    // Add instructor information
+    const courseData = {
+      ...req.body,
+      instructorId: req.user.id,
+      instructor: req.user.name || 'Teacher'
+    };
+
+    // Calculate totals if sections provided
+    if (courseData.sections && courseData.sections.length > 0) {
+      courseData.totalLessons = courseData.sections.reduce((total, section) => {
+        return total + (section.lessons ? section.lessons.length : 0);
+      }, 0);
+      courseData.lessonsCount = courseData.totalLessons;
+    }
+
+    const course = await Course.create(courseData);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Course created successfully',
+      course
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('Create course error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error", 
+      error: error.message 
+    });
   }
 });
 

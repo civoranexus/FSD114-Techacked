@@ -25,9 +25,10 @@ export interface Course {
 interface CourseCardProps {
   course: Course;
   variant?: 'default' | 'enrolled' | 'compact';
+  onEnroll?: (course: Course) => void; // NEW - SAFE OPTIONAL ADDITION
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, variant = 'default' }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, variant = 'default', onEnroll }) => {
   const levelColors = {
     Beginner: 'bg-success/10 text-success border-success/20',
     Intermediate: 'bg-warning/10 text-warning border-warning/20',
@@ -167,11 +168,26 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, variant = 'default' }) 
               <span className="text-lg font-bold text-foreground">${course.price}</span>
             )}
           </div>
-          <Link to={`/courses/${course.id}`}>
-            <Button size="sm" className="btn-primary-gradient">
-              View Course
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={`/courses/${course.id}`}>
+              <Button size="sm" className="btn-primary-gradient">
+                View Course
+              </Button>
+            </Link>
+            {/* NEW - SAFE ADDITION: Enroll button if handler provided */}
+            {onEnroll && !course.isEnrolled && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onEnroll(course);
+                }}
+              >
+                Enroll Now
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

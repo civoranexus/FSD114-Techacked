@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,12 +24,16 @@ import {
   Bell,
   GraduationCap,
   ShoppingCart,
-  Trash2
+  Trash2,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, getTotalItems } = useCart();
+  const { theme, toggleTheme } = useTheme();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -90,11 +96,23 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                <Button variant="ghost" size="icon" className="relative">
+                {/* Theme Toggle - NEW SAFE ADDITION */}
+                <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                  {theme === 'light' ? (
+                    <Moon className="h-5 w-5" />
+                  ) : (
+                    <Sun className="h-5 w-5" />
+                  )}
+                </Button>
+
+                {/* Notifications with real count - SAFE UPDATE */}
+                <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
                   <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
-                    3
-                  </span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Button>
 
                 {/* Cart Dropdown */}

@@ -14,10 +14,11 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, expectedRole?: UserRole) => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  updateProfile?: (profileData: any) => Promise<any>; // NEW - SAFE OPTIONAL ADDITION
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,11 +58,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // LOGIN
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, expectedRole?: UserRole) => {
     setIsLoading(true);
     try {
       const response = await api.auth.login({ email, password });
       const { token, user: userData } = response;
+
+      // ROLE VALIDATION: Check if user's actual role matches expected role
+      if (expectedRole && userData.role !== expectedRole) {
+        throw new ApiError(403, `Access denied. This login is for ${expectedRole}s only. You are registered as a ${userData.role}.`);
+      }
 
       localStorage.setItem('token', token);
       setUser(userData);
@@ -97,6 +103,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  // UPDATE PROFILE (NEW - SAFE EXTENSION)
+  const updateProfile = async (profileData: any) => {
+    try {
+      const response = await api.auth.updateProfile(profileData);
+      setUser(response.user);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(500, 'Profile update failed');
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -106,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         register,
         logout,
         isLoading,
+        updateProfile, // NEW - SAFE ADDITION
       }}
     >
       {children}
